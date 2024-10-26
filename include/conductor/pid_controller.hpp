@@ -1,8 +1,8 @@
-#ifndef PID_CONTROLLER_H
-#define PID_CONTROLLER_H
+#ifndef PID_CONTROLLER_HPP
+#define PID_CONTROLLER_HPP
 
-#include <ros/time.h>
-#include <ros/duration.h>
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp/duration.hpp>
 
 struct PidParams
 {
@@ -49,8 +49,9 @@ private:
     double d_term_;
     double last_control_output_;
     double sample_time_;
-    ros::Time last_time_;
-    ros::Time current_time_;
+    rclcpp::Time last_time_;
+    rclcpp::Time current_time_;
+    rclcpp::Clock ros_clock_; // 使用 ROS 时间
 };
 
-#endif // PID_CONTROLLER_H
+#endif // PID_CONTROLLER_HPP

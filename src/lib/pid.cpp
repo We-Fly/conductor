@@ -1,18 +1,18 @@
-#include "conductor/pid_controller.h"
-#include "conductor/bound.h"
+#include "conductor/pid_controller.hpp"
+#include "conductor/bound.hpp"
 
 PIDController::PIDController(double kp, double ki, double kd, double windup_guard, double output_bound, double sample_time)
     : kp_(kp), ki_(ki), kd_(kd), windup_guard_(windup_guard), output_bound_(output_bound), sample_time_(sample_time),
-      error_(0.0), last_error_(0.0), integral_(0.0), derivative_(0.0), last_control_output_(0.0),
-      last_time_(ros::Time::now()), current_time_(ros::Time::now())
+      error_(0.0), last_error_(0.0), integral_(0.0), derivative_(0.0), last_control_output_(0.0), ros_clock_(rclcpp::Clock(RCL_ROS_TIME)),
+      last_time_(ros_clock_.now()), current_time_(ros_clock_.now())
 {
     clear();
 }
 
 PIDController::PIDController(const PidParams &params)
     : kp_(params.kp), ki_(params.ki), kd_(params.kd), windup_guard_(params.windup_guard), output_bound_(params.output_bound), sample_time_(params.sample_time),
-      error_(0.0), last_error_(0.0), integral_(0.0), derivative_(0.0), last_control_output_(0.0),
-      last_time_(ros::Time::now()), current_time_(ros::Time::now())
+      error_(0.0), last_error_(0.0), integral_(0.0), derivative_(0.0), last_control_output_(0.0), ros_clock_(rclcpp::Clock(RCL_ROS_TIME)),
+      last_time_(ros_clock_.now()), current_time_(ros_clock_.now())
 {
     clear();
 }
@@ -33,7 +33,7 @@ double PIDController::calcOutput(double feedback_value)
     double error = setpoint_ - feedback_value;
 
     // 计算距离上次更新经过的时间
-    double delta_time = (ros::Time::now() - last_time_).toSec();
+    double delta_time = (ros_clock_.now() - last_time_).seconds();
 
     // 计算误差的变化率
     double delta_error = error - last_error_;
@@ -56,7 +56,7 @@ double PIDController::calcOutput(double feedback_value)
         }
 
         // 更新上次更新时间和上次误差
-        last_time_ = ros::Time::now();
+        last_time_ = ros_clock_.now();
         last_error_ = error;
     }
     
