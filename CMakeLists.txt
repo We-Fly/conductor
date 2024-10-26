@@ -33,12 +33,23 @@ target_include_directories(libconductor PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
-# 添加自定义消息
-rosidl_generate_interfaces(${PROJECT_NAME}
-  "msg/Target.msg"
-  DEPENDENCIES std_msgs  # 如果有其他依赖，也要列在这里
+include_directories(
+  include
+  ${CMAKE_CURRENT_BINARY_DIR}/include  # 添加生成的包含目录
 )
 
+set(msg_files
+  "msg/TargetObject.msg"
+)
+
+# 添加自定义消息
+rosidl_generate_interfaces(${PROJECT_NAME}
+  ${msg_files}
+  DEPENDENCIES 
+  std_msgs
+  geometry_msgs
+)
+ament_export_dependencies(rosidl_default_runtime)
 # Add executable
 ament_target_dependencies(libconductor rclcpp tf2_ros mavros_msgs geometry_msgs geographic_msgs std_msgs)
 
@@ -59,6 +70,13 @@ install(TARGETS
 #   scripts/turtle_spawner.py
 #   DESTINATION lib/${PROJECT_NAME}
 # )
+
+rosidl_get_typesupport_target(cpp_typesupport_target
+  ${PROJECT_NAME} rosidl_typesupport_cpp)
+
+target_link_libraries(libconductor "${cpp_typesupport_target}")
+
+# see here: https://docs.ros.org/en/rolling/Tutorials/Beginner-Client-Libraries/Single-Package-Define-And-Use-Interface.html#link-against-the-interface
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

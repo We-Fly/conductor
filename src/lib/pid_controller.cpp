@@ -9,7 +9,7 @@ PIDController::PIDController(double kp, double ki, double kd, double windup_guar
     clear();
 }
 
-PIDController::PIDController(const PidParams &params)
+PIDController::PIDController(const pid_controller::PidParams &params)
     : kp_(params.kp), ki_(params.ki), kd_(params.kd), windup_guard_(params.windup_guard), output_bound_(params.output_bound), sample_time_(params.sample_time),
       error_(0.0), last_error_(0.0), integral_(0.0), derivative_(0.0), last_control_output_(0.0), ros_clock_(rclcpp::Clock(RCL_ROS_TIME)),
       last_time_(ros_clock_.now()), current_time_(ros_clock_.now())

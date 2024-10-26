@@ -4,6 +4,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/duration.hpp>
 
+namespace pid_controller
+{
 struct PidParams
 {
     double kp;
@@ -13,12 +15,13 @@ struct PidParams
     double output_bound;
     double sample_time;
 };
+}
 
 class PIDController
 {
 public:
     PIDController(double kp, double ki, double kd, double windup_guard, double output_bound, double sample_time);
-    PIDController(const PidParams& params);
+    PIDController(const pid_controller::PidParams& params);
     double calcOutput(double feedback_value);
     double calcOutput();
     double getBoundedOutput(double feedback_value);
