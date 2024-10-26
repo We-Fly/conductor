@@ -150,6 +150,7 @@ void ArduConductor::initNode()
 
 void ArduConductor::setPoseRelated(double x, double y, double z, double yaw)
 {
+	(void)x; (void)y; (void)z; (void)yaw;
 }
 
 void ArduConductor::setPoseWorld(double x, double y, double z, double yaw) const

@@ -37,21 +37,21 @@ private:
     double kp_;
     double ki_;
     double kd_;
+    double windup_guard_;
     double output_bound_;
+    double sample_time_;
     double error_;
     double last_error_;
     double integral_;
     double derivative_;
-    double windup_guard_;
     double setpoint_;
     double p_term_;
     double i_term_;
     double d_term_;
     double last_control_output_;
-    double sample_time_;
+    rclcpp::Clock ros_clock_; // 使用 ROS 时间
     rclcpp::Time last_time_;
     rclcpp::Time current_time_;
-    rclcpp::Clock ros_clock_; // 使用 ROS 时间
 };
 
 #endif // PID_CONTROLLER_HPP

@@ -33,10 +33,6 @@ target_include_directories(libconductor PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
-include_directories(
-  
-)
-
 # 添加自定义消息
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Target.msg"
@@ -54,6 +50,10 @@ install(TARGETS
 test_fixed_point_ctrl
   DESTINATION lib/${PROJECT_NAME})
 
+install(TARGETS
+  libconductor
+  DESTINATION lib/${PROJECT_NAME}
+)
 # install(
 #   PROGRAMS
 #   scripts/turtle_spawner.py
