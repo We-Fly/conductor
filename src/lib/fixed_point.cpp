@@ -49,6 +49,16 @@ auto FixedPoint::getBoundedOutput() -> fixed_point::Point
     return {Bound<double>(last_output_.x, output_bound_.x), Bound<double>(last_output_.y, output_bound_.y)};
 }
 
+rclcpp::Time FixedPoint::getTimeNow()
+{
+    return this->node_->now();
+}
+
+rclcpp::Logger FixedPoint::get_logger()
+{
+    return this->node_->get_logger();
+}
+
 void FixedPoint::clear()
 {
     last_output_.x = 0.0;

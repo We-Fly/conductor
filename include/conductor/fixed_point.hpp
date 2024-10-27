@@ -51,28 +51,60 @@ public:
     auto calcXYOutput() -> fixed_point::Point;
     auto getBoundedOutput(fixed_point::Point offset) -> fixed_point::Point;
     auto getBoundedOutput() -> fixed_point::Point;
+    rclcpp::Time getTimeNow();
+    rclcpp::Logger get_logger();
 
     void clear();
 
-    ~FixedPoint(){};
+    ~FixedPoint() {};
 
 protected:
     void subPointCallback(const geometry_msgs::msg::Point::SharedPtr msg);
+    fixed_point::Point last_output_;
 
 private:
-    rclcpp::Node::SharedPtr node_; // 节点智能指针
+    rclcpp::Node::SharedPtr node_;                                         // 节点智能指针
     rclcpp::Subscription<geometry_msgs::msg::Point>::SharedPtr point_sub_; // 订阅器
-    geometry_msgs::msg::Point point_; // 目标点数据
+    geometry_msgs::msg::Point point_;                                      // 目标点数据
 
     fixed_point::Size frame_size_;
     fixed_point::Point center_;
-    fixed_point::Point last_output_;
     fixed_point::Point output_bound_;
 
 public:
     PIDController pid_controller_x; // X轴PID控制器
     PIDController pid_controller_y; // Y轴PID控制器
+};
 
+class FixedPointYolo : public FixedPoint
+{
+public:
+    FixedPointYolo(rclcpp::Node::SharedPtr node,
+                   const std::string &topic,
+                   fixed_point::Point center,
+                   const pid_controller::PidParams &params_x,
+                   const pid_controller::PidParams &params_y,
+                   std::string &target_id,
+                   double lock_threshold_distance,
+                   int lock_cutoff);
+
+    std::string target_id_;                      // 订阅的yolo标签
+    bool is_found_;
+    double lock_threshold_distance_;
+    int locked_count_;
+    bool is_dropped_;
+    bool is_locked_;
+    bool is_lock_counter_reached();
+    int lock_cutoff_;
+    void reset();
+    void updateTime();
+    bool isTimeout();
+    int timeout_count_;
+
+protected:
+    void subPointCallback(const conductor::msg::TargetObject::SharedPtr msg);
+    conductor::msg::TargetObject target_object_; // 目标点数据 - 自定义消息类型
+    rclcpp::Time last_frame_time_;
 };
 
 #endif // FIXED_POINT_HPP
