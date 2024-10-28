@@ -13,6 +13,7 @@
 #include <mavros_msgs/msg/position_target.hpp>
 #include <std_msgs/msg/float64.hpp>
 #include <geometry_msgs/msg/point.hpp>
+#include "conductor/fixed_point.hpp"
 
 #include "conductor/mission_state.hpp"
 #include "conductor/ansi_color.hpp"
@@ -41,10 +42,10 @@ int main(int argc, char **argv)
     // 设置SIGINT处理
     signal(SIGINT, safeSigintHandler);
 
-    // PidParams pidpara{0.17, 0.0, 0.015, 10.0, 40, 0.0};
+    pid_controller::PidParams pidpara{0.17, 0.0, 0.015, 10.0, 40, 0.0};
 
     auto apm = std::make_shared<ArduConductor>("ArduPilot_Guided_Node");
-    // FixedPoint fixed_point_red("filter_out", {800 / 2, 330}, node, pidpara, pidpara);
+    FixedPoint fixed_point_red(apm, "filter_out", {800 / 2, 330}, pidpara, pidpara);
 
     // wait for FCU connection
     while (rclcpp::ok() && !apm->current_state.connected && !is_interrupted)
@@ -93,12 +94,12 @@ int main(int argc, char **argv)
             {
                 apm->setPoseBody(0, 0, 0.6, 0);
                 RCLCPP_INFO(apm->get_logger(), "takeoff to 1.0");
-                // fixed_point_red.clear();
+                fixed_point_red.clear();
                 count++;
             }
             else if (apm->isTimeElapsed(4.0) && count == 1)
             {
-                // apm->setSpeedBody(fixed_point_red.getBoundedOutput().x * 0.01, fixed_point_red.getBoundedOutput().y * 0.01, 0, 0);
+                apm->setSpeedBody(fixed_point_red.getBoundedOutput().x * 0.01, fixed_point_red.getBoundedOutput().y * 0.01, 0, 0);
 
                 if (apm->isTimeElapsed(20))
                 {
@@ -115,7 +116,7 @@ int main(int argc, char **argv)
             break;
 
         case MissionState::kLand:
-            if (apm->land(5.0)) // 10s后降落
+            if (apm->land(3.0)) // 10s后降落
             {
                 rclcpp::shutdown();
             }

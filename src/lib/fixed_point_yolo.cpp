@@ -2,13 +2,13 @@
 
 FixedPointYolo::FixedPointYolo(rclcpp::Node::SharedPtr node,
                                const std::string &topic,
-                               fixed_point::Point center,
+                               fixed_point::Point frame_center,
                                const pid_controller::PidParams &params_x,
                                const pid_controller::PidParams &params_y,
                                std::string &target_id,
                                double lock_threshold_distance,
                                int lock_cutoff)
-    : FixedPoint(node, topic, center, params_x, params_y), target_id_(target_id), is_found_(false),
+    : FixedPoint(node, topic, frame_center, params_x, params_y), target_id_(target_id), is_found_(false),
       lock_threshold_distance_(lock_threshold_distance), locked_count_(0), is_dropped_(false), is_locked_(false), lock_cutoff_(lock_cutoff),
       timeout_count_(0)
 {
@@ -56,8 +56,8 @@ void FixedPointYolo::subPointCallback(const conductor::msg::TargetObject::Shared
         RCLCPP_INFO(this->get_logger(), SUCCESS("\npoint \nX: %0.2f\nY: %0.2f"), msg->center.x, msg->center.y);
 
         auto offset = fixed_point::Point(
-            target_object_.center.y - target_object_.center.y, // 使用 center.y
-            target_object_.center.x - target_object_.center.x  // 使用 center.x
+            target_object_.center.y - frame_center_.y,
+            target_object_.center.x - frame_center_.x
         );
 
         double distance_ = std::sqrt(offset.x * offset.x + offset.y * offset.y);

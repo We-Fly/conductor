@@ -45,7 +45,7 @@ namespace fixed_point
 class FixedPoint
 {
 public:
-    FixedPoint(rclcpp::Node::SharedPtr node, const std::string &topic, fixed_point::Point center, const pid_controller::PidParams &params_x, const pid_controller::PidParams &params_y);
+    FixedPoint(rclcpp::Node::SharedPtr node, const std::string &topic, fixed_point::Point frame_center, const pid_controller::PidParams &params_x, const pid_controller::PidParams &params_y);
 
     auto calcXYOutput(fixed_point::Point offset) -> fixed_point::Point;
     auto calcXYOutput() -> fixed_point::Point;
@@ -68,7 +68,7 @@ private:
     geometry_msgs::msg::Point point_;                                      // 目标点数据
 
     fixed_point::Size frame_size_;
-    fixed_point::Point center_;
+    fixed_point::Point frame_center_;
     fixed_point::Point output_bound_;
 
 public:
@@ -81,7 +81,7 @@ class FixedPointYolo : public FixedPoint
 public:
     FixedPointYolo(rclcpp::Node::SharedPtr node,
                    const std::string &topic,
-                   fixed_point::Point center,
+                   fixed_point::Point frame_center,
                    const pid_controller::PidParams &params_x,
                    const pid_controller::PidParams &params_y,
                    std::string &target_id,
