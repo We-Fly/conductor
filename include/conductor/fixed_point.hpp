@@ -67,11 +67,11 @@ private:
     rclcpp::Subscription<geometry_msgs::msg::Point>::SharedPtr point_sub_; // 订阅器
     geometry_msgs::msg::Point point_;                                      // 目标点数据
 
+public:
     fixed_point::Size frame_size_;
     fixed_point::Point frame_center_;
     fixed_point::Point output_bound_;
 
-public:
     PIDController pid_controller_x; // X轴PID控制器
     PIDController pid_controller_y; // Y轴PID控制器
 };

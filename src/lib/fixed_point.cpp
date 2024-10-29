@@ -19,7 +19,7 @@ void FixedPoint::subPointCallback(const geometry_msgs::msg::Point::SharedPtr msg
     RCLCPP_INFO(node_->get_logger(), SUCCESS("\n--------------------------"));
     this->point_ = *msg;
     RCLCPP_INFO(node_->get_logger(), SUCCESS("\nGot point \nX: %0.2f\nY: %0.2f"), point_.x, point_.y);
-    auto offset = fixed_point::Point(point_.y - center_.y, point_.x - center_.x);
+    auto offset = fixed_point::Point(point_.y - frame_center_.y, point_.x - frame_center_.x);
     RCLCPP_INFO(node_->get_logger(), SUCCESS("\nOffset \nX: %0.2f\nY: %0.2f"), offset.x, offset.y);
     calcXYOutput(offset);
     RCLCPP_INFO(node_->get_logger(), SUCCESS("\nOutput \nX: %0.2f\nY: %0.2f"), last_output_.x, last_output_.y);
