@@ -22,8 +22,9 @@ class PIDController
 public:
     PIDController(double kp, double ki, double kd, double windup_guard, double output_bound, double sample_time);
     PIDController(const pid_controller::PidParams& params);
-    double calcOutput(double feedback_value);
+    double calcOutputRealize(double feedback_value);
     double calcOutput();
+    double calcOutput(double feedback_value);
     double getBoundedOutput(double feedback_value);
     double getBoundedOutput();
     void clear();

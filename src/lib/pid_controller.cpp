@@ -27,7 +27,8 @@ void PIDController::clear()
     last_control_output_ = 0.0;
 }
 
-double PIDController::calcOutput(double feedback_value)
+// 位置式PID控制
+double PIDController::calcOutputRealize(double feedback_value)
 {
     // 计算误差
     double error = setpoint_ - feedback_value;
@@ -68,6 +69,11 @@ double PIDController::calcOutput(double feedback_value)
 double PIDController::calcOutput()
 {
     return last_control_output_;
+}
+
+double PIDController::calcOutput(double feedback_value)
+{
+    return calcOutputRealize(feedback_value);
 }
 
 double PIDController::getBoundedOutput(double feedback_value)
