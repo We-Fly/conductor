@@ -35,6 +35,8 @@ the conductor of copter on ROS2 humble
 
 需要调整视觉PID的参数，不同的高度和无人机需要相应调整
 
+![alt text](assets/PID.png)
+
 ### 固件编译教程
 
 TODO
