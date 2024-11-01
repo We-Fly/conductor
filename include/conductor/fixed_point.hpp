@@ -84,7 +84,7 @@ public:
                    fixed_point::Point frame_center,
                    const pid_controller::PidParams &params_x,
                    const pid_controller::PidParams &params_y,
-                   std::string &target_id,
+                   const std::string &target_id,
                    double lock_threshold_distance,
                    int lock_cutoff);
 

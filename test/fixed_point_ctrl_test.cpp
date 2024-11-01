@@ -45,7 +45,7 @@ int main(int argc, char **argv)
     pid_controller::PidParams pidpara{0.17, 0.0, 0.015, 10.0, 40, 0.0};
 
     auto apm = std::make_shared<ArduConductor>("ArduPilot_Guided_Node");
-    FixedPoint fixed_point_red(apm, "filter_out", {800 / 2, 330}, pidpara, pidpara);
+    FixedPointYolo fixed_point_red(apm, "detected_circle", {640 / 2, 480 / 2}, pidpara, pidpara, "red", 20, 50);
 
     // wait for FCU connection
     while (rclcpp::ok() && !apm->current_state.connected && !is_interrupted)
@@ -82,41 +82,43 @@ int main(int argc, char **argv)
             break;
 
         case MissionState::kTakeoff:
-            if (apm->takeoff(0.5, 1.0)) // 起飞到1M高度
+            if (apm->takeoff(0.5, 1.0, 3.0)) // 起飞到1M高度
             {
                 apm->mission_state = MissionState::kPose;
+                count = 0;
                 RCLCPP_INFO(apm->get_logger(), MISSION_SWITCH_TO("pose"));
             }
             break;
 
         case MissionState::kPose:
-            if (apm->isTimeElapsed(2.0) && count == 0)
+            if (apm->isTimeElapsed(1.0) && count == 0)
             {
-                apm->setPoseBody(0, 0, 0.6, 0);
-                RCLCPP_INFO(apm->get_logger(), "takeoff to 1.0");
+                RCLCPP_INFO(apm->get_logger(), "clear PID controller");
                 fixed_point_red.clear();
                 count++;
             }
             else if (apm->isTimeElapsed(4.0) && count == 1)
             {
                 apm->setSpeedBody(fixed_point_red.getBoundedOutput().x * 0.01, fixed_point_red.getBoundedOutput().y * 0.01, 0, 0);
+                RCLCPP_INFO(apm->get_logger(), "start PID aiding");
 
                 if (apm->isTimeElapsed(20))
                 {
-                    apm->setSpeedBody(0, 0, 0, 0);
+                    apm->setSpeedBody(0, 0, 0, 0); // stop the copter
                     count++;
                 }
             }
-            else if (apm->isTimeElapsed(20.0))
+            else if (count == 2)
             {
                 apm->last_request = apm->now();
                 apm->setSpeedBody(0, 0, 0, 0);
+                RCLCPP_INFO(apm->get_logger(), "Landing after 3s");
                 apm->mission_state = MissionState::kLand;
             }
             break;
 
         case MissionState::kLand:
-            if (apm->land(3.0)) // 10s后降落
+            if (apm->land(3.0)) // 3s后降落
             {
                 rclcpp::shutdown();
             }

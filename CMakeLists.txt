@@ -62,9 +62,15 @@ ament_target_dependencies(libconductor rclcpp tf2_ros mavros_msgs geometry_msgs 
 add_executable(test_fixed_point_ctrl test/fixed_point_ctrl_test.cpp)
 ament_target_dependencies(test_fixed_point_ctrl rclcpp std_msgs geometry_msgs mavros_msgs geographic_msgs)
 target_link_libraries(test_fixed_point_ctrl libconductor)
+
+add_executable(test_takeoff test/takeoff_test.cpp)
+ament_target_dependencies(test_takeoff rclcpp std_msgs geometry_msgs mavros_msgs geographic_msgs)
+target_link_libraries(test_takeoff libconductor)
+
 # Install the executable
 install(TARGETS
-test_fixed_point_ctrl
+  test_fixed_point_ctrl
+  test_takeoff
   DESTINATION lib/${PROJECT_NAME})
 
 install(TARGETS

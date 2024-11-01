@@ -5,7 +5,7 @@ FixedPointYolo::FixedPointYolo(rclcpp::Node::SharedPtr node,
                                fixed_point::Point frame_center,
                                const pid_controller::PidParams &params_x,
                                const pid_controller::PidParams &params_y,
-                               std::string &target_id,
+                               const std::string &target_id,
                                double lock_threshold_distance,
                                int lock_cutoff)
     : FixedPoint(node, topic, frame_center, params_x, params_y), target_id_(target_id), is_found_(false),

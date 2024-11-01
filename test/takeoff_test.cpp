@@ -1,169 +1,126 @@
 /**
- * @file takeoff_test.cpp
- * @brief Ardupilot 起飞降落测试
- * Stack and tested in Gazebo Classic SITL
+ * @file fixed_point_ctrl.cpp
+ * @brief 定点测试，使用Conductor封装库
  */
 
-#include <ros/ros.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <mavros_msgs/CommandBool.h>
-#include <mavros_msgs/SetMode.h>
-#include <mavros_msgs/State.h>
-#include <mavros_msgs/CommandTOL.h>
-#include <conductor/mission_state.h>
-#include "signal.h" //necessary for the Custom SIGINT handler
-#include "stdio.h"  //necessary for the Custom SIGINT handler
+#include <rclcpp/rclcpp.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/twist.hpp>
+#include <mavros_msgs/srv/command_bool.hpp>
+#include <mavros_msgs/srv/set_mode.hpp>
+#include <mavros_msgs/msg/state.hpp>
+#include <mavros_msgs/srv/command_tol.hpp>
+#include <mavros_msgs/msg/position_target.hpp>
+#include <std_msgs/msg/float64.hpp>
+#include <geometry_msgs/msg/point.hpp>
+#include "conductor/fixed_point.hpp"
+
+#include "conductor/mission_state.hpp"
+#include "conductor/ansi_color.hpp"
+#include "conductor/apm.hpp"
+// #include "conductor/fixed_point.hpp"
+
+#include <signal.h> // Necessary for the Custom SIGINT handler
+#include <memory>   // For std::shared_ptr
+
+#define PI 3.1415926535
 
 bool is_interrupted = false;
 
 // 定义一个安全的SIGINT处理函数
 void safeSigintHandler(int sig)
 {
-    // 创建一个临时的节点句柄
-    ros::NodeHandle nh;
-    // 创建一个降落服务客户端
-    ros::ServiceClient land_client = nh.serviceClient<mavros_msgs::CommandTOL>("mavros/cmd/land");
-    // 停止运动并降落
-    mavros_msgs::CommandTOL land_cmd;
-    if (land_client.call(land_cmd) &&
-        land_cmd.response.success)
-    {
-        ROS_INFO("Vehicle landed!");
-    }
-    // ros::shutdown();
+    (void)sig;
     // 设置中断标志
     is_interrupted = true;
 }
 
-mavros_msgs::State current_state;
-void state_cb(const mavros_msgs::State::ConstPtr &msg)
-{
-    current_state = *msg;
-}
-
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "guided_node", ros::init_options::NoSigintHandler);
-    ros::NodeHandle nh;
+    rclcpp::init(argc, argv);
 
+    // 设置SIGINT处理
     signal(SIGINT, safeSigintHandler);
 
-    ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>("mavros/state", 10, state_cb);
-    ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>("mavros/setpoint_position/local", 10);
-    ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>("mavros/cmd/arming");
-    ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
-    ros::ServiceClient takeoff_client = nh.serviceClient<mavros_msgs::CommandTOL>("mavros/cmd/takeoff");
-    ros::ServiceClient land_client = nh.serviceClient<mavros_msgs::CommandTOL>("mavros/cmd/land");
+    pid_controller::PidParams pidpara{0.17, 0.0, 0.015, 10.0, 40, 0.0};
 
-    // the setpoint publishing rate MUST be faster than 2Hz
-    ros::Rate rate(50.0);
-
-    MissionState drone_state = kPrearm;
+    auto apm = std::make_shared<ArduConductor>("ArduPilot_Guided_Node");
+    FixedPointYolo fixed_point_red(apm, "detected_circle", {640 / 2, 480 / 2}, pidpara, pidpara, "red", 20, 50);
 
     // wait for FCU connection
-    while (ros::ok() && !current_state.connected && !is_interrupted)
+    while (rclcpp::ok() && !apm->current_state.connected && !is_interrupted)
     {
         if (is_interrupted)
         {
-            ros::shutdown();
+            rclcpp::shutdown();
             return 0;
         }
-        ros::spinOnce();
-        rate.sleep();
+        rclcpp::spin_some(apm);
+        apm->rate.sleep();
     }
 
-    geometry_msgs::PoseStamped pose;
-    pose.pose.position.x = 0;
-    pose.pose.position.y = 0;
-    pose.pose.position.z = 1;
+    RCLCPP_INFO(apm->get_logger(), SUCCESS("Drone connected!"));
 
-    mavros_msgs::SetMode setModeGuided;
-    setModeGuided.request.custom_mode = "GUIDED";
-
-    mavros_msgs::CommandBool arm_cmd;
-    arm_cmd.request.value = true;
-
-    mavros_msgs::CommandTOL takeoff_cmd;
-    takeoff_cmd.request.altitude = 1;
-
-    ros::Time last_request = ros::Time::now();
-
-    while (ros::ok() && !is_interrupted)
+    // 重置上一次操作的时间为当前时刻
+    apm->last_request = apm->now();
+    int count = 0;
+    while (rclcpp::ok() && !is_interrupted)
     {
-        switch (drone_state)
+        // 任务执行状态机
+        switch (apm->mission_state)
         {
         case MissionState::kPrearm:
-            if (current_state.mode != "GUIDED" &&
-                (ros::Time::now() - last_request > ros::Duration(5.0)))
+            if (apm->setModeGuided(5.0)) // 修改飞行模式为 Guided (ArduCopter)
             {
-                if (set_mode_client.call(setModeGuided) &&
-                    setModeGuided.response.mode_sent)
-                {
-                    ROS_INFO("Guided enabled");
-                    drone_state = kArm;
-                }
-                last_request = ros::Time::now();
-            }
-            else if (current_state.mode == "GUIDED" &&
-                     (ros::Time::now() - last_request > ros::Duration(5.0)))
-            {
-                ROS_INFO("Guided enabled");
-                drone_state = kArm;
-                last_request = ros::Time::now();
+                apm->sendGpOrigin();    // 如果切换成Guided模式就发送全局原点坐标
+                apm->setMoveSpeed(0.15); // 设置空速
             }
             break;
 
         case MissionState::kArm:
-            if (!current_state.armed &&
-                (ros::Time::now() - last_request > ros::Duration(5.0)))
-            {
-                if (arming_client.call(arm_cmd) &&
-                    arm_cmd.response.success)
-                {
-                    ROS_INFO("Vehicle armed!");
-                    drone_state = kTakeoff;
-                }
-                else
-                {
-                    ROS_INFO("Vehicle arm failed!");
-                    drone_state = kPrearm;
-                }
-                last_request = ros::Time::now();
-            }
+            apm->arm(5.0); // 解锁电机
             break;
 
         case MissionState::kTakeoff:
-            if (ros::Time::now() - last_request > ros::Duration(3.0))
+            if (apm->takeoff(0.5, 1.0, 3.0)) // 起飞到1M高度
             {
-                if (takeoff_client.call(takeoff_cmd))
+                apm->mission_state = MissionState::kPose;
+                count = 0;
+                RCLCPP_INFO(apm->get_logger(), MISSION_SWITCH_TO("pose"));
+            }
+            break;
+
+        case MissionState::kPose:
+            if (apm->isTimeElapsed(1.0) && count == 0)
+            {
+                RCLCPP_INFO(apm->get_logger(), "clear PID controller");
+                fixed_point_red.clear();
+                count++;
+            }
+            else if (apm->isTimeElapsed(4.0) && count == 1)
+            {
+                // apm->setSpeedBody(fixed_point_red.getBoundedOutput().x * 0.01, fixed_point_red.getBoundedOutput().y * 0.01, 0, 0);
+                // RCLCPP_INFO(apm->get_logger(), "start PID aiding");
+
+                if (apm->isTimeElapsed(20))
                 {
-                    ROS_INFO("Vehicle Takeoff!");
-                    drone_state = kLand;
-                    last_request = ros::Time::now();
-                }
-                else
-                {
-                    ROS_INFO("Vehicle Takeoff Failed!");
-                    drone_state = kArm;
-                    last_request = ros::Time::now();
+                    apm->setSpeedBody(0, 0, 0, 0); // stop the copter
+                    count++;
                 }
             }
-
+            else if (count == 2)
+            {
+                apm->last_request = apm->now();
+                apm->setSpeedBody(0, 0, 0, 0);
+                RCLCPP_INFO(apm->get_logger(), "Landing after 3s");
+                apm->mission_state = MissionState::kLand;
+            }
             break;
 
         case MissionState::kLand:
-            if (current_state.armed &&
-                (ros::Time::now() - last_request > ros::Duration(10.0)))
+            if (apm->land(3.0)) // 3s后降落
             {
-                mavros_msgs::CommandTOL land_cmd;
-                if (land_client.call(land_cmd) &&
-                    land_cmd.response.success)
-                {
-                    ROS_INFO("Vehicle landed!");
-                    drone_state = kPrearm;
-                    ros::shutdown();
-                }
-                last_request = ros::Time::now();
+                rclcpp::shutdown();
             }
             break;
 
@@ -171,10 +128,10 @@ int main(int argc, char **argv)
             break;
         }
 
-        ros::spinOnce();
-        rate.sleep();
+        rclcpp::spin_some(apm);
+        apm->rate.sleep();
     }
-    // 在循环结束后调用ros::shutdown()
-    ros::shutdown();
+    // 在循环结束后调用rclcpp::shutdown()
+    rclcpp::shutdown();
     return 0;
 }
