@@ -17,6 +17,10 @@ the conductor of copter on ROS2 humble
 - 光流传感器MTF-02 2.5米测距光流一体模块（用于室内粗略定位）
 - 一些固定用的3D打印件
 
+打印件和降压模块的地址在这里 https://oshwhub.com/discodyer/5v6a-buck-module
+
+**可以在网上购买适合的降压模块，自制模块有烧毁风险，请谨慎**
+
 ## 系统框架
 
 无人机使用Ardupilot开源固件，我用的这个飞控需要自行编译，配置文件链接：
