@@ -32,9 +32,9 @@ find_package(tf2_ros REQUIRED)
 file(GLOB CONDUCTOR_SOURCES "src/lib/*.cpp")
 
 # 将获取的源文件添加到库中
-add_library(libconductor ${CONDUCTOR_SOURCES})
+add_library(Conductor ${CONDUCTOR_SOURCES})
 
-target_include_directories(libconductor PUBLIC
+target_include_directories(Conductor PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
@@ -57,15 +57,15 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 )
 ament_export_dependencies(rosidl_default_runtime)
 # Add executable
-ament_target_dependencies(libconductor rclcpp tf2_ros mavros_msgs geometry_msgs geographic_msgs std_msgs)
+ament_target_dependencies(Conductor rclcpp tf2_ros mavros_msgs geometry_msgs geographic_msgs std_msgs)
 
 add_executable(test_fixed_point_ctrl test/fixed_point_ctrl_test.cpp)
 ament_target_dependencies(test_fixed_point_ctrl rclcpp std_msgs geometry_msgs mavros_msgs geographic_msgs)
-target_link_libraries(test_fixed_point_ctrl libconductor)
+target_link_libraries(test_fixed_point_ctrl Conductor)
 
 add_executable(test_takeoff test/takeoff_test.cpp)
 ament_target_dependencies(test_takeoff rclcpp std_msgs geometry_msgs mavros_msgs geographic_msgs)
-target_link_libraries(test_takeoff libconductor)
+target_link_libraries(test_takeoff Conductor)
 
 # Install the executable
 install(TARGETS
@@ -74,8 +74,8 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME})
 
 install(TARGETS
-  libconductor
-  DESTINATION lib/${PROJECT_NAME}
+  Conductor
+  DESTINATION lib
 )
 # install(
 #   PROGRAMS
@@ -86,7 +86,7 @@ install(TARGETS
 rosidl_get_typesupport_target(cpp_typesupport_target
   ${PROJECT_NAME} rosidl_typesupport_cpp)
 
-target_link_libraries(libconductor "${cpp_typesupport_target}")
+target_link_libraries(Conductor "${cpp_typesupport_target}")
 
 # see here: https://docs.ros.org/en/rolling/Tutorials/Beginner-Client-Libraries/Single-Package-Define-And-Use-Interface.html#link-against-the-interface
 
