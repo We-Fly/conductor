@@ -1,7 +1,7 @@
 #include "conductor/fixed_point.hpp"
 
 FixedPoint::FixedPoint(rclcpp::Node::SharedPtr node, const std::string &topic, fixed_point::Point frame_center, const pid_controller::PidParams &params_x, const pid_controller::PidParams &params_y)
-    : node_(node), frame_center_(frame_center), output_bound_(params_x.output_bound, params_y.output_bound), 
+    : node_(node), frame_center_(frame_center), output_bound_(params_x.output_bound, params_y.output_bound),
     pid_controller_x(params_x), pid_controller_y(params_y)
 {
     if (topic != "none")

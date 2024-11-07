@@ -8,11 +8,19 @@ FixedPointYolo::FixedPointYolo(rclcpp::Node::SharedPtr node,
                                const std::string &target_id,
                                double lock_threshold_distance,
                                int lock_cutoff)
-    : FixedPoint(node, topic, frame_center, params_x, params_y), target_id_(target_id), is_found_(false),
+    : FixedPoint(node, "none", frame_center, params_x, params_y), target_id_(target_id), is_found_(false),
       lock_threshold_distance_(lock_threshold_distance), locked_count_(0), is_dropped_(false), is_locked_(false), lock_cutoff_(lock_cutoff),
       timeout_count_(0)
 {
     last_frame_time_ = getTimeNow();
+    this->init(topic);
+}
+
+void FixedPointYolo::init(const std::string &topic)
+{
+    // 订阅目标点数据
+    target_object_sub_ = this->node_->create_subscription<conductor::msg::TargetObject>(
+        topic, 10, std::bind(&FixedPointYolo::subTargetObjectCallback, this, std::placeholders::_1));
 }
 
 bool FixedPointYolo::is_lock_counter_reached()
@@ -38,7 +46,7 @@ bool FixedPointYolo::isTimeout()
     return (getTimeNow() - this->last_frame_time_) > std::chrono::seconds(1);
 }
 
-void FixedPointYolo::subPointCallback(const conductor::msg::TargetObject::SharedPtr msg)
+void FixedPointYolo::subTargetObjectCallback(const conductor::msg::TargetObject::SharedPtr msg)
 {
     // OpenCV 坐标系：X 向右增大，Y 向下增大
     // 飞机坐标系：X 对应 OpenCV 的 -Y，Y 对应 OpenCV 的 -X
@@ -57,8 +65,7 @@ void FixedPointYolo::subPointCallback(const conductor::msg::TargetObject::Shared
 
         auto offset = fixed_point::Point(
             target_object_.center.y - frame_center_.y,
-            target_object_.center.x - frame_center_.x
-        );
+            target_object_.center.x - frame_center_.x);
 
         double distance_ = std::sqrt(offset.x * offset.x + offset.y * offset.y);
         if (distance_ < lock_threshold_distance_)
@@ -75,6 +82,7 @@ void FixedPointYolo::subPointCallback(const conductor::msg::TargetObject::Shared
         calcXYOutput(offset);
 
         RCLCPP_INFO(this->get_logger(), SUCCESS("\nOutput \nX: %0.2f\nY: %0.2f"), last_output_.x, last_output_.y);
-        // RCLCPP_INFO(this->get_logger(), SUCCESS("\n--------------------------"));
+        
+        RCLCPP_INFO(this->get_logger(), SUCCESS("\n--------------------------"));
     }
 }

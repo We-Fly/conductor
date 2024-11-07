@@ -63,14 +63,19 @@ add_executable(test_fixed_point_ctrl test/fixed_point_ctrl_test.cpp)
 ament_target_dependencies(test_fixed_point_ctrl rclcpp std_msgs geometry_msgs mavros_msgs geographic_msgs)
 target_link_libraries(test_fixed_point_ctrl Conductor)
 
-add_executable(test_takeoff test/takeoff_test.cpp)
-ament_target_dependencies(test_takeoff rclcpp std_msgs geometry_msgs mavros_msgs geographic_msgs)
-target_link_libraries(test_takeoff Conductor)
+# add_executable(test_takeoff test/takeoff_test.cpp)
+# ament_target_dependencies(test_takeoff rclcpp std_msgs geometry_msgs mavros_msgs geographic_msgs)
+# target_link_libraries(test_takeoff Conductor)
+
+add_executable(test_pid_controller test/pid_controller_test.cpp)
+ament_target_dependencies(test_pid_controller rclcpp std_msgs geometry_msgs mavros_msgs geographic_msgs)
+target_link_libraries(test_pid_controller Conductor)
 
 # Install the executable
 install(TARGETS
   test_fixed_point_ctrl
-  test_takeoff
+  # test_takeoff
+  test_pid_controller
   DESTINATION lib/${PROJECT_NAME})
 
 install(TARGETS

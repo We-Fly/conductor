@@ -28,7 +28,7 @@ protected:
     APMTakeoffState flag_takeoff;
 
 public:
-    ArduConductor(std::string node_name = "ArduConductor", double rate = 20);
+    ArduConductor(rclcpp::Node::SharedPtr node);
     
     bool takeoff(double pre_takeoff_alt, double altitude, double delay = 3.0); // 重写二段起飞方法
     bool arm(double delay = 5.0);

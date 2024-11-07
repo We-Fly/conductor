@@ -13,10 +13,10 @@
 #include "conductor/mission_state.hpp"
 #include <rclcpp/time.hpp>
 
-class BaseConductor : public rclcpp::Node
+class BaseConductor
 {
 protected:
-    virtual void initNode();
+    rclcpp::Node::SharedPtr node_;
     rclcpp::Subscription<mavros_msgs::msg::State>::SharedPtr state_sub_;
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr local_pos_pub_;
     rclcpp::Publisher<mavros_msgs::msg::PositionTarget>::SharedPtr set_raw_pub_;
@@ -24,12 +24,12 @@ protected:
     void subStateCallback(const mavros_msgs::msg::State::SharedPtr msg);
 
 public:
-    BaseConductor(std::string node_name="base_conductor", double rate = 20.0);
-
+    BaseConductor(rclcpp::Node::SharedPtr node);
+    virtual void initNode();
+    rclcpp::Logger get_logger();
     MissionState mission_state;
 
     rclcpp::Time last_request;
-    rclcpp::Rate rate;
     mavros_msgs::msg::State current_state;
 
     bool setModeGuided(double delay = 5.0);
@@ -39,6 +39,8 @@ public:
 
     bool isTimeElapsed(double delay);
     void updateLastRequestTime();
+
+    rclcpp::Time now();
 
 };
 

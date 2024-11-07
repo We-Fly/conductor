@@ -61,8 +61,6 @@ public:
 protected:
     void subPointCallback(const geometry_msgs::msg::Point::SharedPtr msg);
     fixed_point::Point last_output_;
-
-private:
     rclcpp::Node::SharedPtr node_;                                         // 节点智能指针
     rclcpp::Subscription<geometry_msgs::msg::Point>::SharedPtr point_sub_; // 订阅器
     geometry_msgs::msg::Point point_;                                      // 目标点数据
@@ -88,6 +86,8 @@ public:
                    double lock_threshold_distance,
                    int lock_cutoff);
 
+    void init(const std::string &topic);
+
     std::string target_id_;                      // 订阅的yolo标签
     bool is_found_;
     double lock_threshold_distance_;
@@ -102,7 +102,8 @@ public:
     int timeout_count_;
 
 protected:
-    void subPointCallback(const conductor::msg::TargetObject::SharedPtr msg);
+    rclcpp::Subscription<conductor::msg::TargetObject>::SharedPtr target_object_sub_;
+    void subTargetObjectCallback(const conductor::msg::TargetObject::SharedPtr msg);
     conductor::msg::TargetObject target_object_; // 目标点数据 - 自定义消息类型
     rclcpp::Time last_frame_time_;
 };

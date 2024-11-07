@@ -6,8 +6,8 @@
 // 	initNode();
 // }
 
-ArduConductor::ArduConductor(std::string node_name, double rate)
-	: BaseConductor(node_name, rate), flag_takeoff(APMTakeoffState::kLand)
+ArduConductor::ArduConductor(rclcpp::Node::SharedPtr node)
+	: BaseConductor(node), flag_takeoff(APMTakeoffState::kLand)
 {
 	initNode();
 }
@@ -18,7 +18,7 @@ ArduConductor::ArduConductor(std::string node_name, double rate)
 void ArduConductor::sendGpOrigin(double latitude, double longitude)
 {
 	// 临时创建一个发布者对象
-	auto set_gp_origin_pub_ = this->create_publisher<geographic_msgs::msg::GeoPointStamped>(
+	auto set_gp_origin_pub_ = this->node_->create_publisher<geographic_msgs::msg::GeoPointStamped>(
 		"mavros/global_position/set_gp_origin", 10);
 	// 构建 GeoPointStamped 消息
 	auto gp_origin = geographic_msgs::msg::GeoPointStamped();
@@ -36,7 +36,7 @@ void ArduConductor::sendGpOrigin(double latitude, double longitude)
 /// @return
 bool ArduConductor::setMoveSpeed(double speed)
 {
-	auto speed_client_ = this->create_client<mavros_msgs::srv::CommandLong>("mavros/cmd/command");
+	auto speed_client_ = this->node_->create_client<mavros_msgs::srv::CommandLong>("mavros/cmd/command");
 
 	// 创建请求
 	auto request = std::make_shared<mavros_msgs::srv::CommandLong::Request>();
@@ -46,7 +46,7 @@ bool ArduConductor::setMoveSpeed(double speed)
 	// 异步发送请求
 	auto result_future = speed_client_->async_send_request(request);
 	// 等待服务响应
-	if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), result_future) == rclcpp::FutureReturnCode::SUCCESS && result_future.get()->success)
+	if (rclcpp::spin_until_future_complete(this->node_->get_node_base_interface(), result_future) == rclcpp::FutureReturnCode::SUCCESS && result_future.get()->success)
 	{
 		RCLCPP_INFO(this->get_logger(), SUCCESS("Speed set: %0.2f"), speed);
 		return true;
@@ -145,7 +145,6 @@ void ArduConductor::setBreak()
 
 void ArduConductor::initNode()
 {
-	//
 }
 
 void ArduConductor::setPoseRelated(double x, double y, double z, double yaw)
@@ -201,14 +200,14 @@ bool ArduConductor::arm(double delay)
 	if (!current_state.armed &&
 		isTimeElapsed(delay))
 	{
-		auto arming_client = this->create_client<mavros_msgs::srv::CommandBool>("mavros/cmd/arming");
+		auto arming_client = this->node_->create_client<mavros_msgs::srv::CommandBool>("mavros/cmd/arming");
 		auto arm_cmd = std::make_shared<mavros_msgs::srv::CommandBool::Request>();
 		arm_cmd->value = true;
 
 		if (arming_client->wait_for_service(std::chrono::seconds(1)))
 		{
 			auto result = arming_client->async_send_request(arm_cmd);
-			if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), result) ==
+			if (rclcpp::spin_until_future_complete(this->node_->get_node_base_interface(), result) ==
 					rclcpp::FutureReturnCode::SUCCESS &&
 				result.get()->success)
 			{
@@ -241,7 +240,7 @@ bool ArduConductor::land(double delay)
 		isTimeElapsed(delay))
 	{
 		// 创建降落服务客户端
-		auto land_client = this->create_client<mavros_msgs::srv::CommandTOL>("mavros/cmd/land");
+		auto land_client = this->node_->create_client<mavros_msgs::srv::CommandTOL>("mavros/cmd/land");
 
 		// 等待服务可用
 		if (!land_client->wait_for_service(std::chrono::seconds(1)))
@@ -255,7 +254,7 @@ bool ArduConductor::land(double delay)
 
 		// 异步调用服务并等待结果
 		auto result = land_client->async_send_request(land_request);
-		if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), result) == rclcpp::FutureReturnCode::SUCCESS &&
+		if (rclcpp::spin_until_future_complete(this->node_->get_node_base_interface(), result) == rclcpp::FutureReturnCode::SUCCESS &&
 			result.get()->success)
 		{
 			RCLCPP_INFO(this->get_logger(), SUCCESS("Vehicle landed!"));
@@ -289,7 +288,7 @@ bool ArduConductor::takeoff(double pre_takeoff_alt, double altitude, double dela
 	if (isTimeElapsed(delay) && flag_takeoff == APMTakeoffState::kTakeoff1)
 	{
 		// 创建起飞服务客户端
-		auto takeoff_client = this->create_client<mavros_msgs::srv::CommandTOL>("mavros/cmd/takeoff");
+		auto takeoff_client = this->node_->create_client<mavros_msgs::srv::CommandTOL>("mavros/cmd/takeoff");
 
 		// 等待服务可用
 		if (!takeoff_client->wait_for_service(std::chrono::seconds(1)))
@@ -304,7 +303,7 @@ bool ArduConductor::takeoff(double pre_takeoff_alt, double altitude, double dela
 
 		// 异步调用服务并等待结果
 		auto result = takeoff_client->async_send_request(takeoff_request);
-		if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), result) == rclcpp::FutureReturnCode::SUCCESS &&
+		if (rclcpp::spin_until_future_complete(this->node_->get_node_base_interface(), result) == rclcpp::FutureReturnCode::SUCCESS &&
 			result.get()->success)
 		{
 			RCLCPP_INFO(this->get_logger(), SUCCESS("Vehicle pre-Takeoff to altitude: %0.2f"), pre_takeoff_alt);
