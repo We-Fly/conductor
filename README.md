@@ -39,7 +39,51 @@ the conductor of copter on ROS2 humble
 
 ### 固件编译教程
 
-TODO
+为什么我需要编译固件呢？因为我使用的穿越机飞控，并没有被Ardupilot官方支持，商家提供的固件也没有开启Guided模式支持，所以我们需要自行编译一个固件
+
+首先参照[Ardupilot文档](https://ardupilot.org/dev/docs/building-setup-linux.html#building-setup-linux)，克隆Ardupilot仓库
+
+ - https://github.com/ArduPilot/ardupilot.git for the main ardupilot repo
+
+ - https://github.com/your-github-account/ardupilot for your fork of the ardupilot repo
+
+
+```bash
+git clone --recurse-submodules https://github.com/your-github-userid/ardupilot
+cd ardupilot
+```
+
+按照文档里的介绍，安装依赖，如果你是Ubuntu用户，可以直接执行安装脚本
+
+```bash
+Tools/environment_install/install-prereqs-ubuntu.sh -y
+```
+
+如果你是其他发行版，请自行安装依赖
+
+随后可以开始编译固件了
+
+签出到合适的稳定分支，我们不使用master分支
+
+```bash
+git checkout Copter-4.5.6
+```
+
+更新一下submodule到这个分支版本需要的版本
+
+```bash
+./Tools/gittools/submodule-sync.sh
+```
+
+然后需要手动在ardupilot仓库下添加我使用的这个飞机的固件描述文件，在本仓库的hwdef/MICOAIR405文件夹下，请将`MICOAIR405`复制到ardupilot仓库下的`libraries/AP_HAL_ChibiOS/hwdef/MICOAIR405`目录下，随后我们开始固件的编译
+
+```bash
+Tools/scripts/build_bootloaders.py MICOAIR405
+./waf configure --board MICOAIR405
+./waf copter
+```
+
+随后我们就完成了固件的编译，目前我使用的是4.5.6版本，4.5.7测试过是可以正常编译的，后续退出新版本有可能会出现链接失败的情况，那就需要手动关闭一些功能以节省flash空间
 
 ### 无人机调参
 
